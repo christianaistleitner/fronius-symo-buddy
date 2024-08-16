@@ -178,30 +178,39 @@ def start_smart_meter():
 
     data_block = ModbusSparseDataBlock({
         40001: [
-            # TODO: ???
-            21365,
-            28243
+            # Well-known value to uniquely identify this as a SunSpec Modbus Map.
+            *struct.unpack('>HH', b'SunS')
         ],
         40003: [
-            # TODO: ???
+            # Well-known value to uniquely identify this as a SunSpec Common Model block.
             1
         ],
         40004: [
-            # TODO: ???
+            # Length of Common Model block.
             65
         ],
         40005: [
-            # Manufacturer: "Fronius"
-            70, 114, 111, 110, 105, 117, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            # Device Model: "Smart Meter"
-            83, 109, 97, 114, 116, 32, 77, 101, 116, 101, 114, 32, 54, 51, 65, 0,
-            # Options: n/a
-            0, 0, 0, 0, 0, 0, 0, 0,
-            # Software Version: n/a
-            0, 0, 0, 0, 0, 0, 0, 0,
-            # Serial Number: 00000
-            48, 48, 48, 48, 48, 48, 48, 49, 0, 0, 0, 0, 0, 0, 0, 0,
-            # Modbus TCP Address: 239 + x
+            # Manufacturer
+            *struct.unpack('>HHHHHHHHHHHHHHHH', b'Fronius'.ljust(32, b'\0'))
+        ],
+        40021: [
+            # Device model
+            *struct.unpack('>HHHHHHHHHHHHHHHH', b'Smart Meter'.ljust(32, b'\0'))
+        ],
+        40037: [
+            # Options
+            *struct.unpack('>HHHHHHHH', b''.ljust(16, b'\0'))
+        ],
+        40045: [
+            # Software Version
+            *struct.unpack('>HHHHHHHH', b''.ljust(16, b'\0'))
+        ],
+        40053: [
+            # Serial Number
+            *struct.unpack('>HHHHHHHHHHHHHHHH', b'0'.ljust(32, b'\0'))
+        ],
+        40069: [
+            # Modbus Device Address
             239 + SMART_METER_ADDRESS
         ],
         40070: [
@@ -214,9 +223,8 @@ def start_smart_meter():
         ],
         40072: [0] * 124,  # meter values block
         40196: [
-            # TODO: ???
-            65535,
-            0
+            # Well-known value to uniquely identify this as the end block
+            65535, 0
         ],
     })
     slave_context = ModbusSlaveContext(hr=data_block)
@@ -236,6 +244,7 @@ def start_smart_meter():
         address=("0.0.0.0", MODBUS_PORT),
         framer=ModbusSocketFramer
     )
+
 
 if __name__ == "__main__":
     start_smart_meter()
