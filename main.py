@@ -12,6 +12,8 @@ from pymodbus.datastore import ModbusSparseDataBlock
 from pymodbus.server import StartTcpServer
 from pymodbus.transaction import ModbusSocketFramer
 
+import src.ecoflow as ecoflow
+
 # --------------------------------------------------
 # Configuration
 # --------------------------------------------------
@@ -27,9 +29,9 @@ MODBUS_PORT = 502
 # Globals
 # --------------------------------------------------
 
-leistung: int | float = 1  # W
-einspeisung: int | float = 1  # Wh
-netzbezug: int | float = 1  # Wh
+leistung: int | float = 0  # W
+einspeisung: int | float = 0  # Wh
+netzbezug: int | float = 0  # Wh
 rtime = 0
 
 ti_int1 = "0"
@@ -73,6 +75,8 @@ def updating_writer(slave_context: ModbusSlaveContext):
 
     lock.acquire()
 
+    leistung = ecoflow.output_power_watts
+
     # Considering correction factor
     float_netzbezug = float(netzbezug)
     netzbezug_corr = float_netzbezug * CORRECTION_FACTOR
@@ -106,7 +110,7 @@ def updating_writer(slave_context: ModbusSlaveContext):
     # Converting total import value of smart meter out of MQTT payload into Modbus register
 
     total_import_float = int(netzbezug_corr)
-    total_import_hex = hex(struct.unpack('<I', struct.pack('<f', total_import_float))[0])
+    total_import_hex = f"0x{total_import_float:08x}"
     total_import_hex_part1 = str(total_import_hex)[2:6]
     total_import_hex_part2 = str(total_import_hex)[6:10]
     ti_int1 = int(total_import_hex_part1, 16)
@@ -115,7 +119,7 @@ def updating_writer(slave_context: ModbusSlaveContext):
     # Converting total export value of smart meter out of MQTT payload into Modbus register
 
     total_export_float = int(einspeisung_corr)
-    total_export_hex = hex(struct.unpack('<I', struct.pack('<f', total_export_float))[0])
+    total_export_hex = f"0x{total_import_float:08x}"
     total_export_hex_part1 = str(total_export_hex)[2:6]
     total_export_hex_part2 = str(total_export_hex)[6:10]
     exp_int1 = int(total_export_hex_part1, 16)
@@ -237,7 +241,8 @@ def start_smart_meter():
     # --------------------------------------------------
     time = 5  # 5 seconds delay
     # rt = RepeatedTimer(time, updating_writer, server_context)
-    updating_writer(server_context[0])
+    #updating_writer(server_context[0])
+    ecoflow.on_update = lambda : updating_writer(server_context[0])
 
     StartTcpServer(
         context=server_context,
