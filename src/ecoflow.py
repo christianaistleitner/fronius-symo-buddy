@@ -62,8 +62,11 @@ def on_message(client, userdata, message):
     print(f"Received message: {message.payload.decode()} on topic {message.topic}")
     if message.topic == f"/open/{certificateAccount}/{SN}/quota":
         global output_power_watts
-        output_power_watts = float(json.loads(message.payload).get("param").get("invOutputWatts"))/10
-        on_update()
+        print(message.payload)
+        invOutputWatts = json.loads(message.payload).get("param").get("invOutputWatts")
+        if invOutputWatts is not None:
+            output_power_watts = float(invOutputWatts) / 10
+            on_update()
 
 # Create an MQTT client instance
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
